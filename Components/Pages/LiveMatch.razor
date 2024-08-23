@@ -1,18 +1,19 @@
-﻿@page "/"
+﻿@page "/live"
 @inject IConfiguration Configuration
 @inject HttpClient Http
 @using Cricbuzz.Models
 @using System.Text.Json
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Live</PageTitle>
+
 @if (matchList == null || matchList.Data == null)
 {
     <p><em>Loading...</em></p>
 }
 else
 {
-    <h>Match Details:</h>
-    @foreach (var match in pastMatchList.Data)
+    <h>Live Match Details:</h>
+    @foreach (var match in liveMatchList.Data)
     {
         <div>
             <h5>@match.Series</h5>
@@ -27,19 +28,15 @@ else
 }
 
 
-@code{
+@code {
     private Matches? matchList;
     string? api;
     int count = 1;
 
-    private Matches futureMatchList;
-    private Matches pastMatchList;
     private Matches liveMatchList;
 
     protected override void OnInitialized()
     {
-        futureMatchList = new Matches { Data = new List<MatchData>() };
-        pastMatchList = new Matches { Data = new List<MatchData>() };
         liveMatchList = new Matches { Data = new List<MatchData>() };
     }
 
@@ -53,19 +50,11 @@ else
         var jsonString = await response.Content.ReadAsStringAsync();
         matchList = JsonSerializer.Deserialize<Matches>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-        if(matchList != null)
+        if (matchList != null)
         {
-            foreach(var match in matchList.Data)
+            foreach (var match in matchList.Data)
             {
-                if(match.Status == "Match not started")
-                {
-                    futureMatchList.Data.Add(match);
-                }
-                else if(match.Status.Contains("won by"))
-                {
-                    pastMatchList.Data.Add(match);
-                }
-                else
+                if (match.Status != "Match not started" && !match.Status.Contains("won by"))
                 {
                     liveMatchList.Data.Add(match);
                 }
