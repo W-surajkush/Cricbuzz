@@ -1,75 +1,49 @@
 ﻿@page "/"
-@inject IConfiguration Configuration
-@inject HttpClient Http
-@using Cricbuzz.Models
-@using System.Text.Json
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
-@if (matchList == null || matchList.Data == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <h>Match Details:</h>
-    @foreach (var match in pastMatchList.Data)
-    {
-        <div>
-            <h5>@match.Series</h5>
-            <p>Status: @match.Status</p>
-            <p>Match Type: @match.MatchType</p>
-            <p>Date and Time: @match.DateTimeGMT.ToString("yyyy-MM-ddTHH:mm:ss")</p>
-            <p>Team 1: @match.T1</p>
-            <p>Team 2: @match.T2</p>
-        </div>
-    }
+<h3>Counter</h3>
+<p>Counter Value: @counter</p>
 
-}
-
-
-@code{
-    private Matches? matchList;
-    string? api;
-    int count = 1;
-
-    private Matches futureMatchList;
-    private Matches pastMatchList;
-    private Matches liveMatchList;
-
-    protected override void OnInitialized()
-    {
-        futureMatchList = new Matches { Data = new List<MatchData>() };
-        pastMatchList = new Matches { Data = new List<MatchData>() };
-        liveMatchList = new Matches { Data = new List<MatchData>() };
-    }
+@code {
+    private HubConnection? hubConnection;
+    private int counter = 0, cnt=0;
 
     protected override async Task OnInitializedAsync()
     {
-        // Replace with your API endpoint
-        api = Configuration["CRICKET_API_KEY"];
-        var response = await Http.GetAsync($"https://api.cricapi.com/v1/cricScore?apikey={api}");
-        response.EnsureSuccessStatusCode();
-
-        var jsonString = await response.Content.ReadAsStringAsync();
-        matchList = JsonSerializer.Deserialize<Matches>(jsonString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        if(matchList != null)
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/matchhub"))
+            .Build();
+        hubConnection.On<int>("ReceiveLiveData", (liveData) =>
         {
-            foreach(var match in matchList.Data)
+            counter = liveData;
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+
+        update();
+    }
+    private async void update()
+    {
+        while(true)
+        {
+            cnt++;
+            if(hubConnection is not null)
             {
-                if(match.Status == "Match not started")
-                {
-                    futureMatchList.Data.Add(match);
-                }
-                else if(match.Status.Contains("won by"))
-                {
-                    pastMatchList.Data.Add(match);
-                }
-                else
-                {
-                    liveMatchList.Data.Add(match);
-                }
+                await hubConnection.SendAsync("SendLiveData", cnt);
             }
+            await Task.Delay(1000);
+        }
+    }
+
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
         }
     }
 }

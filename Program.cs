@@ -1,19 +1,25 @@
 using Cricbuzz.Components;
-using DotNetEnv;
+using Cricbuzz.Hubs;
+using Microsoft.AspNetCore.ResponseCompression;
 
-// Load environment variables from .env file
-Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add HttpClient service
-builder.Services.AddHttpClient();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddSignalR();
+
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        ["application/octet-stream"]);
+});
+
 var app = builder.Build();
+
+app.UseResponseCompression();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -24,10 +30,13 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapHub<MatchHub>("/matchhub");
 
 app.Run();
