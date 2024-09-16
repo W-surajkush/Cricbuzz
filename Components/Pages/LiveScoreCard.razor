@@ -1,0 +1,46 @@
+﻿@using Cricbuzz.Models
+
+<div class="card text-center mb-4">
+    <div class="card-header bg-dark text-white">
+        <h3>Live Score Card</h3>
+    </div>
+    <div class="card-body">
+        @if (currData == null)
+        {
+            <div class="row">
+                <div class="col">
+                    <p><strong>@(info?.Teams[0])</strong></p>
+                </div>
+                <div class="col">
+                    <p><strong>@(info?.Teams[1])</strong></p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col">
+                    <h4>@(currData?.Team) <span class="badge bg-primary"> @(currData?.Runs?.Total)-@(currData?.Wickets?.Count-1) </span></h4>
+                </div>
+                <div class="col">
+                    <h4>@(info?.Teams[0] == currData?.Team ? info?.Teams[1] : info?.Teams[0])</h4>
+                    <p>
+                        @if (currData?.IsSecondInning == true)
+                        {
+                            <span>First Inning Score: @(currData?.FirstInningScore) - @(currData?.FirstInniingWickets)</span>
+                        }
+                        else
+                        {
+                            <span>Overs: @(currData?.Over.OverNumber).@(currData?.Over.BallNumber)</span>
+                        }
+                    </p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public BallByBallModel currData { get; set; }
+    [Parameter] public Info info { get; set; }
+}

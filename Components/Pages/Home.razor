@@ -1,43 +1,35 @@
 ﻿@page "/"
+@using Cricbuzz.Models
 @using Microsoft.AspNetCore.SignalR.Client
-@implements IAsyncDisposable
 @inject NavigationManager Navigation
 
-<h3>Counter</h3>
-<p>Counter Value: @counter</p>
+<div class="container mt-5">
+    <LiveScoreCard currData="currData" info="Info" />
+    <MatchDetails currData="currData" />
+</div>
 
 @code {
     private HubConnection? hubConnection;
-    private int counter = 0, cnt=0;
+    BallByBallModel currData;
+    Info Info;
 
     protected override async Task OnInitializedAsync()
     {
         hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/matchhub"))
+            .WithUrl(Navigation.ToAbsoluteUri("http://localhost:5171/matchhub"))
             .Build();
-        hubConnection.On<int>("ReceiveLiveData", (liveData) =>
+        hubConnection.On<BallByBallModel>("ReceiveLiveData", (liveData) =>
         {
-            counter = liveData;
+            currData = liveData;
             InvokeAsync(StateHasChanged);
         });
-
-        await hubConnection.StartAsync();
-
-        update();
-    }
-    private async void update()
-    {
-        while(true)
+        hubConnection.On<Info>("ReceiveMatchInfo", (_info) =>
         {
-            cnt++;
-            if(hubConnection is not null)
-            {
-                await hubConnection.SendAsync("SendLiveData", cnt);
-            }
-            await Task.Delay(1000);
-        }
+            Info = _info;
+            InvokeAsync(StateHasChanged);
+        });
+        await hubConnection.StartAsync();
     }
-
 
     public async ValueTask DisposeAsync()
     {

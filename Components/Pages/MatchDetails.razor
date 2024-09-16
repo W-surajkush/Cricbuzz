@@ -1,0 +1,58 @@
+﻿@using Cricbuzz.Models
+
+<div class="card">
+    <div class="card-header bg-success text-white">
+        <h3>Match Details</h3>
+    </div>
+    <div class="card-body">
+        @if (currData != null)
+        {
+            <div class="row mb-2">
+                <div class="col">
+                    <p><strong>Batter:</strong> @(currData?.Delivery?.Batter)</p>
+                </div>
+                <div class="col">
+                    <p><strong>Non-Striker:</strong> @(currData?.Delivery?.Non_striker)</p>
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col">
+                    <p><strong>Bowler:</strong> @(currData?.Delivery?.Bowler)</p>
+                </div>
+                <div class="col">
+                    <p><strong>Total Runs:</strong> @(currData?.Runs?.Total)</p>
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col">
+                    <p><strong>Extras:</strong> @(currData?.Runs?.Extras)</p>
+                </div>
+                <div class="col">
+                    <p><strong>Wickets:</strong> @(currData?.Wickets?.Count-1)</p>
+                </div>
+            </div>
+
+            @if (currData?.Wickets?.Count > 1)
+            {
+                <p><strong>Last Wicket:</strong> @(currData.Wickets.Last().Player_out) @(currData.Wickets.Last().Kind)
+                    by
+                    @foreach (var player in currData.Wickets.Last().Fielders)
+                    {
+                        <span>@(player.Name), </span>
+                    }
+                </p>
+            }
+
+            @if (currData?.IsSecondInning == true)
+            {
+                <p><strong>First Inning Total:</strong> @(currData?.FirstInningScore) / Wickets: @(currData?.FirstInniingWickets)</p>
+            }
+
+            <p><strong>Status:</strong> @(currData?.Status)</p>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public BallByBallModel currData { get; set; }
+}
