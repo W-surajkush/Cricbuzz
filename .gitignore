@@ -8,4 +8,7 @@ bin/
 obj/
 
 # Ignore publish output
-wwwroot/
+
+
+# Ignore enviroment variable
+.env

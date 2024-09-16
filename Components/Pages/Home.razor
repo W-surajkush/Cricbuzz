@@ -1,7 +1,41 @@
 ﻿@page "/"
+@using Cricbuzz.Models
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<div class="container mt-5">
+    <LiveScoreCard currData="currData" info="Info" />
+    <MatchDetails currData="currData" />
+</div>
 
-<h1>Hello, world!</h1>
+@code {
+    private HubConnection? hubConnection;
+    BallByBallModel currData;
+    Info Info;
 
-Welcome to your new app.
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("http://localhost:5171/matchhub"))
+            .Build();
+        hubConnection.On<BallByBallModel>("ReceiveLiveData", (liveData) =>
+        {
+            currData = liveData;
+            InvokeAsync(StateHasChanged);
+        });
+        hubConnection.On<Info>("ReceiveMatchInfo", (_info) =>
+        {
+            Info = _info;
+            InvokeAsync(StateHasChanged);
+        });
+        await hubConnection.StartAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}
