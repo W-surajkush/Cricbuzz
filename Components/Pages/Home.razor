@@ -3,32 +3,81 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager Navigation
 
-<div class="container mt-5">
-    <LiveScoreCard currData="currData" info="Info" />
-    <MatchDetails currData="currData" />
-</div>
+<Loading IsLoading="@isLoading" />
+
+@if (!isLoading)
+{
+    <div class="container mt-5">
+        <LiveScoreCard currData="currData" card="card" />
+        <MatchDetails currData="currData" />
+    </div>
+}
 
 @code {
     private HubConnection? hubConnection;
-    BallByBallModel currData;
-    Info Info;
+    private BallByBallModel currData = new();
+    private Info info = new();
+    private CardModel card = new();
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
+    {
+        await InitializeHubConnectionAsync();
+    }
+
+    private async Task InitializeHubConnectionAsync()
     {
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("http://localhost:5171/matchhub"))
             .Build();
-        hubConnection.On<BallByBallModel>("ReceiveLiveData", (liveData) =>
-        {
-            currData = liveData;
-            InvokeAsync(StateHasChanged);
-        });
-        hubConnection.On<Info>("ReceiveMatchInfo", (_info) =>
-        {
-            Info = _info;
-            InvokeAsync(StateHasChanged);
-        });
+
+        // Setup handlers
+        hubConnection.On<BallByBallModel>("ReceiveLiveData", HandleLiveData);
+        hubConnection.On<Info>("ReceiveMatchInfo", HandleMatchInfo);
+
+        // Start connection
         await hubConnection.StartAsync();
+    }
+
+    private void HandleLiveData(BallByBallModel liveData)
+    {
+        currData = liveData;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleMatchInfo(Info _info)
+    {
+        info = _info;
+        if (currData is not null)
+        {
+            if (isLoading)
+            {
+                isLoading = false;
+            }
+
+            UpdateCardInfo();
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateCardInfo()
+    {
+        card.MatchType = info.Match_type;
+        card.Venue = info?.Venue;
+        card.EventName = info.Event.Name;
+        card.Team1 = info?.Teams[0];
+        card.Team2 = info?.Teams[1];
+
+        bool isTeam1Playing = card.Team1 == currData?.Team;
+
+        card.Team1Playing = isTeam1Playing;
+        card.Team1Wickets = isTeam1Playing ? currData?.Wickets.Count  : currData?.FirstInniingWickets;
+        card.Team2Wickets = !isTeam1Playing ? currData?.Wickets.Count  : currData?.FirstInniingWickets;
+        card.Team1Score = isTeam1Playing ? currData?.Runs.Total : currData?.FirstInningScore;
+        card.Team2Score = !isTeam1Playing ? currData?.Runs.Total : currData?.FirstInningScore;
+        card.Team1Overs = isTeam1Playing ? currData?.Over.OverNumber + 0.1 * currData.Over.BallNumber : null;
+        card.Team2Overs = !isTeam1Playing ? currData?.Over.OverNumber + 0.1 * currData.Over.BallNumber : null;
     }
 
     public async ValueTask DisposeAsync()
