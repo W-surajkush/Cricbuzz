@@ -1,46 +1,62 @@
 ﻿@using Cricbuzz.Models
 
-<div class="card text-center mb-4">
-    <div class="card-header bg-dark text-white">
-        <h3>Live Score Card</h3>
+<div class="card live-score-card">
+    <div class="card-header">
+        <span class="badge bg-danger">LIVE</span> |
+        <span class="match-type">@card?.EventName</span> |
+        <span class="location">@card?.Venue</span>
     </div>
+
     <div class="card-body">
-        @if (currData == null)
-        {
-            <div class="row">
-                <div class="col">
-                    <p><strong>@(info?.Teams[0])</strong></p>
-                </div>
-                <div class="col">
-                    <p><strong>@(info?.Teams[1])</strong></p>
-                </div>
+        <!-- Team 1 Score Section -->
+        <div class="team-score">
+            <div class="team">
+                <span class="team-name">@card?.Team1</span>
+                @if (card?.Team1Playing == true)
+                {
+                    <span>*</span>
+                    <span class="wickets">(overs: @card?.Team1Overs)</span>
+                }
             </div>
-        }
-        else
-        {
-            <div class="row">
-                <div class="col">
-                    <h4>@(currData?.Team) <span class="badge bg-primary"> @(currData?.Runs?.Total)-@(currData?.Wickets?.Count-1) </span></h4>
+
+            @if (card?.Team1Playing == true || currData?.IsSecondInning == true)
+            {
+                <div class="score">
+                    <span>@card?.Team1Score/@card?.Team1Wickets</span>
                 </div>
-                <div class="col">
-                    <h4>@(info?.Teams[0] == currData?.Team ? info?.Teams[1] : info?.Teams[0])</h4>
-                    <p>
-                        @if (currData?.IsSecondInning == true)
-                        {
-                            <span>First Inning Score: @(currData?.FirstInningScore) - @(currData?.FirstInniingWickets)</span>
-                        }
-                        else
-                        {
-                            <span>Overs: @(currData?.Over.OverNumber).@(currData?.Over.BallNumber)</span>
-                        }
-                    </p>
-                </div>
+            }
+            else
+            {
+                <span>yet to bat</span>
+            }
+        </div>
+
+        <!-- Team 2 Score Section -->
+        <div class="team-score">
+            <div class="team">
+                <span class="team-name">@card?.Team2</span>
+                @if (card?.Team1Playing == false)
+                {
+                    <span>*</span>
+                    <span class="wickets">(overs: @card?.Team2Overs)</span>
+                }
             </div>
-        }
+
+            @if (card?.Team1Playing == false || currData?.IsSecondInning == true)
+            {
+                <div class="score">
+                    <span>@card?.Team2Score/@card?.Team2Wickets</span>
+                </div>
+            }
+            else
+            {
+                <span>yet to bat</span>
+            }
+        </div>
     </div>
 </div>
 
 @code {
     [Parameter] public BallByBallModel currData { get; set; }
-    [Parameter] public Info info { get; set; }
+    [Parameter] public CardModel card { get; set; }
 }
